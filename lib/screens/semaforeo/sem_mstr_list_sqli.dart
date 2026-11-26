@@ -7,7 +7,7 @@ import 'package:miapp/screens/semaforeo/sem_mstr_register_screen.dart';
 import 'package:miapp/services/api_service.dart';
 
 class SemMstrListSqlScreen extends StatefulWidget {
-  const SemMstrListSqlScreen({Key? key}) : super(key: key);
+  const SemMstrListSqlScreen({super.key});
 
   @override
   State<SemMstrListSqlScreen> createState() => _SemMstrListSqlScreenState();
@@ -106,7 +106,7 @@ class _SemMstrListSqlScreenState extends State<SemMstrListSqlScreen> {
       "TUNIDAD": formatField(det["tunidad"]),
       "MEDIDA_DIRECCION": formatField(det["medida_direccion"]),
       "MEDIDA_TRASERA": formatField(det["medida_trasera"]),
-       "VERSION": "C1806",
+      "VERSION": "C1806",
     };
 
     for (int i = 1; i <= 12; i++) {
@@ -244,67 +244,70 @@ class _SemMstrListSqlScreenState extends State<SemMstrListSqlScreen> {
   //   }
   // }
   Future<void> _eliminarPorReg(String folio, String reg) async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Confirmar eliminación"),
-      content: Text("¿Deseas eliminar el REG $reg del folio $folio?"),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar")),
-        TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Eliminar")),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  try {
-    final int? regInt = int.tryParse(reg);
-    if (regInt == null) throw Exception("REG inválido");
-
-    // Obtener datos del registro actual
-    final item = detalles.firstWhere(
-        (element) => limpiar(element['folio']) == folio && limpiar(element['reg']) == reg);
-    final sincronizado = item['sincronizado'] ?? 0;
-
-    if (sincronizado == 1) {
-      final String empresa = limpiar(item['empresa']);
-      final String base = limpiar(item['base']);
-      final String unidad = limpiar(item['unidad']);
-
-      final url =
-          'http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/Semaforeo/$empresa/$base/$folio/$unidad';
-      final response = await http.delete(Uri.parse(url));
-
-      if (response.statusCode != 200) {
-        debugPrint("❌ No se pudo eliminar del servidor: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("❌ Error al eliminar en servidor")));
-        return;
-      }
-    }
-
-    // Eliminar de SQLite si fue exitoso en API o si era local
-    await DBOperations.instance.deleteByWhere(
-      'sem_det',
-      'folio = ? AND reg = ?',
-      [folio, regInt],
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar eliminación"),
+        content: Text("¿Deseas eliminar el REG $reg del folio $folio?"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancelar")),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Eliminar")),
+        ],
+      ),
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("✅ REG $reg eliminado correctamente")));
-    _cargarRegistros();
-  } catch (e) {
-    debugPrint("❌ Error al eliminar REG $reg: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Error al eliminar registro")));
-  }
-}
+    if (confirm != true) return;
 
+    try {
+      final int? regInt = int.tryParse(reg);
+      if (regInt == null) throw Exception("REG inválido");
+
+      // Obtener datos del registro actual
+      final item = detalles.firstWhere((element) =>
+          limpiar(element['folio']) == folio && limpiar(element['reg']) == reg);
+      final sincronizado = item['sincronizado'] ?? 0;
+
+      if (sincronizado == 1) {
+        final String empresa = limpiar(item['empresa']);
+        final String base = limpiar(item['base']);
+        final String unidad = limpiar(item['unidad']);
+
+        final url =
+            'http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/Semaforeo/$empresa/$base/$folio/$unidad';
+        final response = await http.delete(Uri.parse(url));
+
+        if (!mounted) return;
+
+        if (response.statusCode != 200) {
+          debugPrint("❌ No se pudo eliminar del servidor: ${response.body}");
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("❌ Error al eliminar en servidor")));
+          return;
+        }
+      }
+
+      // Eliminar de SQLite si fue exitoso en API o si era local
+      await DBOperations.instance.deleteByWhere(
+        'sem_det',
+        'folio = ? AND reg = ?',
+        [folio, regInt],
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("✅ REG $reg eliminado correctamente")));
+      _cargarRegistros();
+    } catch (e) {
+      debugPrint("❌ Error al eliminar REG $reg: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("❌ Error al eliminar registro")));
+    }
+  }
 
   void _mostrarDetalleCompleto(Map<String, dynamic> item) {
     showDialog(

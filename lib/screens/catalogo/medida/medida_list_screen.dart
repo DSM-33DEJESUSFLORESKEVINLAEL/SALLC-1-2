@@ -27,7 +27,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
       _isLoading = true;
     });
 
-    List<Map<String, dynamic>> medidasData = await DBOperations.instance.queryAllRows('medida');
+    List<Map<String, dynamic>> medidasData =
+        await DBOperations.instance.queryAllRows('medida');
     final uniqueMap = {
       for (var medida in medidasData) medida['medida']: medida
     };
@@ -39,7 +40,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
   }
 
   void _showEditDialog(Medida medida) {
-    TextEditingController medidaController = TextEditingController(text: medida.medida);
+    TextEditingController medidaController =
+        TextEditingController(text: medida.medida);
 
     showDialog(
       context: context,
@@ -56,7 +58,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
               child: const Text("Cancelar"),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFCC00)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFCC00)),
               onPressed: () async {
                 await DBOperations.instance.updateByWhere(
                   'medida',
@@ -67,10 +70,12 @@ class MedidaListScreenState extends State<MedidaListScreen> {
                   where: 'empresa = ? AND medida = ?',
                   whereArgs: [medida.empresa, medida.medida],
                 );
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadMedidas();
               },
-              child: const Text("Actualizar", style: TextStyle(color: Colors.white)),
+              child: const Text("Actualizar",
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -82,9 +87,12 @@ class MedidaListScreenState extends State<MedidaListScreen> {
     final authService = AuthService();
     final tieneInternet = await authService.hasInternetConnection();
 
+    if (!mounted) return;
+
     if (!tieneInternet) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("📴 Sin conexión. No se puede sincronizar.")),
+        const SnackBar(
+            content: Text("📴 Sin conexión. No se puede sincronizar.")),
       );
       return;
     }
@@ -105,7 +113,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
       ),
     );
 
-    final List<Map<String, dynamic>> medidasData = await DBOperations.instance.queryAllRows('medida');
+    final List<Map<String, dynamic>> medidasData =
+        await DBOperations.instance.queryAllRows('medida');
     int enviados = 0;
 
     for (var data in medidasData) {
@@ -114,9 +123,10 @@ class MedidaListScreenState extends State<MedidaListScreen> {
 
       final medidaStr = medida.medida;
       final empresaStr = medida.empresa.toString();
-      final medidaEscapada = medidaStr.replaceAll("/", "*").replaceAll("'", "''");
-      final sql = "INSERT INTO MEDIDAS (EMPRESA, MEDIDA) VALUES ('$empresaStr', '$medidaEscapada')";
-
+      final medidaEscapada =
+          medidaStr.replaceAll("/", "*").replaceAll("'", "''");
+      final sql =
+          "INSERT INTO MEDIDAS (EMPRESA, MEDIDA) VALUES ('$empresaStr', '$medidaEscapada')";
 
       final insertado = await authService.ejecutarSQLRemoto(sql);
       //  print("🔎 SQL final: $sql");
@@ -126,12 +136,13 @@ class MedidaListScreenState extends State<MedidaListScreen> {
         await DBOperations.instance.updateByWhere(
           'medida',
           {'sincronizado': 1},
-          where: ' empresa = ? AND medida = ? ' ,
-          whereArgs: [ medida.empresa,medida.medida],
+          where: ' empresa = ? AND medida = ? ',
+          whereArgs: [medida.empresa, medida.medida],
         );
       }
     }
 
+    if (!mounted) return;
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +176,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
             onPressed: _sincronizarMedidas,
           ),
           IconButton(
-            icon: const Icon(Icons.add, color: Color.fromARGB(255, 54, 14, 231)),
+            icon:
+                const Icon(Icons.add, color: Color.fromARGB(255, 54, 14, 231)),
             onPressed: _navigateToRegisterScreen,
           ),
         ],
@@ -197,14 +209,21 @@ class MedidaListScreenState extends State<MedidaListScreen> {
                             (states) => const Color(0xFFFFCC00),
                           ),
                           columns: const [
-                            DataColumn(label: Text("Medida", style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text("Acciones", style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(
+                                label: Text("Medida",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold))),
+                            DataColumn(
+                                label: Text("Acciones",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold))),
                           ],
                           rows: _medidas.map((medida) {
                             final esSincronizada = medida.sincronizado == 1;
                             return DataRow(
-                              color: MaterialStateProperty.resolveWith<Color?>(
-                                (states) => esSincronizada ? Colors.blue[50] : null,
+                              color: WidgetStateProperty.resolveWith<Color?>(
+                                (states) =>
+                                    esSincronizada ? Colors.blue[50] : null,
                               ),
                               cells: [
                                 DataCell(Row(
@@ -213,7 +232,8 @@ class MedidaListScreenState extends State<MedidaListScreen> {
                                     if (esSincronizada)
                                       const Padding(
                                         padding: EdgeInsets.only(left: 6),
-                                        child: Icon(Icons.check, color: Colors.green, size: 18),
+                                        child: Icon(Icons.check,
+                                            color: Colors.green, size: 18),
                                       ),
                                   ],
                                 )),
@@ -221,8 +241,10 @@ class MedidaListScreenState extends State<MedidaListScreen> {
                                   Row(
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.blue),
-                                        onPressed: () => _showEditDialog(medida),
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.blue),
+                                        onPressed: () =>
+                                            _showEditDialog(medida),
                                       ),
                                     ],
                                   ),

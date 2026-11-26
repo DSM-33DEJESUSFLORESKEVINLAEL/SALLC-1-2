@@ -58,7 +58,8 @@ class _AppDrawerState extends State<AppDrawer> {
         nombreusuario = user["NOMBREUSUARIO"] ?? "";
       });
     } else {
-      _logger.w("⚠️ No se encontraron datos de empresa y base en SharedPreferences.");
+      _logger.w(
+          "⚠️ No se encontraron datos de empresa y base en SharedPreferences.");
     }
   }
 
@@ -75,6 +76,8 @@ class _AppDrawerState extends State<AppDrawer> {
         DeviceOrientation.landscapeRight,
       ]);
     }
+
+    if (!context.mounted) return;
 
     Navigator.push(
       context,
@@ -113,7 +116,8 @@ class _AppDrawerState extends State<AppDrawer> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Colors.blueAccent),
+                    child:
+                        Icon(Icons.person, size: 40, color: Colors.blueAccent),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -302,7 +306,6 @@ class _AppDrawerState extends State<AppDrawer> {
                                   landscape: false,
                                 );
                               }),
-                           
                           ListTile(
                               leading: const Icon(Icons.add),
                               title: const Text("Lista Semáforeo"),
@@ -332,7 +335,6 @@ class _AppDrawerState extends State<AppDrawer> {
                           }),
                     ),
 
-                  
                     FadeInLeft(
                       delay: const Duration(milliseconds: 800),
                       child: ListTile(
@@ -342,8 +344,10 @@ class _AppDrawerState extends State<AppDrawer> {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('loggedIn',
                               false); // ✅ Borra la bandera de sesión iniciada
-                            await prefs.setBool('datosSincronizados', false); // 🔄 Para forzar sincronización en nuevo login
+                          await prefs.setBool('datosSincronizados',
+                              false); // 🔄 Para forzar sincronización en nuevo login
 
+                          if (!context.mounted) return;
                           context.go('/'); // ✅ Regresa a login
                         },
                       ),
@@ -371,6 +375,7 @@ class _AppDrawerState extends State<AppDrawer> {
           DeviceOrientation.portraitDown,
         ]);
 
+        if (!context.mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => screen),

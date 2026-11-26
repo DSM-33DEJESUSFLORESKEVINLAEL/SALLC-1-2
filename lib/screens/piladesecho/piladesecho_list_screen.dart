@@ -3,8 +3,6 @@
 // Este código es parte de la aplicación [Mi app].
 // Prohibida su reproducción o distribución sin autorización.
 
-
-import 'dart:collection';
 import 'dart:convert';
 // import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +17,7 @@ import 'package:miapp/models/desmstr.dart';
 import 'package:miapp/screens/piladesecho/piladesecho_desdet_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:miapp/navigation/app_drawer.dart';
-import 'package:miapp/db/consultastablasSQL.dart';
+import 'package:miapp/db/consultas_tablas_sql.dart';
 // import 'package:sqflite/sqflite.dart';
 
 class PiladesechoListScreen extends StatefulWidget {
@@ -39,16 +37,15 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
 
   // ignore: unused_element
   bool _esDelMesActual(String? fechaStr) {
-  if (fechaStr == null || fechaStr.isEmpty) return false;
-  try {
-    final fecha = DateTime.parse(fechaStr);
-    final ahora = DateTime.now();
-    return fecha.month == ahora.month && fecha.year == ahora.year;
-  } catch (e) {
-    return false;
+    if (fechaStr == null || fechaStr.isEmpty) return false;
+    try {
+      final fecha = DateTime.parse(fechaStr);
+      final ahora = DateTime.now();
+      return fecha.month == ahora.month && fecha.year == ahora.year;
+    } catch (e) {
+      return false;
+    }
   }
-}
-
 
   final List<String> periodos = [
     "Mes actual",
@@ -195,10 +192,10 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
               await _obtenerUltimosRegistros();
           if (ultimosRegistros != null && ultimosRegistros.isNotEmpty) {
             responseData = ultimosRegistros;
-            print(
+            debugPrint(
                 "🔄 Mostrando últimos registros guardados: ${ultimosRegistros.length}");
           } else {
-            print("⚠️ No hay registros guardados en SharedPreferences");
+            debugPrint("⚠️ No hay registros guardados en SharedPreferences");
           }
         }
       }
@@ -355,7 +352,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
     );
 
     for (final p in pendientes) {
-        debugPrint("🟠 Pendiente REG: ${p['reg']}, FOLIO: ${p['folio']}");
+      debugPrint("🟠 Pendiente REG: ${p['reg']}, FOLIO: ${p['folio']}");
     }
 
     setState(() {
@@ -363,10 +360,10 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
     });
   }
 
-
-
   Future<void> _enviarDatosPendientes() async {
     final hasInternet = await _authService.hasInternetConnection();
+
+    if (!mounted) return;
 
     if (!hasInternet) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -467,7 +464,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
 
   Map<String, dynamic> _convertirAFormatoJsonOrdenado(
       Map<String, dynamic> original) {
-    Map<String, dynamic> nuevo = LinkedHashMap();
+    Map<String, dynamic> nuevo = {};
 
     List<String> ordenDeseado = [
       "FOLIO",
@@ -552,6 +549,8 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
 
       final response = await http.delete(url);
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final db = await DatabaseHelper.instance.database;
 
@@ -559,6 +558,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
         await db.delete('desdet', where: 'folio = ?', whereArgs: [folio]);
         await db.delete('desmstr', where: 'folio = ?', whereArgs: [folio]);
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text("🗑️ Folio '$folio' eliminado correctamente.")),
@@ -572,7 +572,8 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
         );
       }
     } catch (e) {
-      print("❌ Error al eliminar folio: $e");
+      debugPrint("❌ Error al eliminar folio: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Error al eliminar el folio.")),
       );
@@ -652,13 +653,12 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
                 await _debugPrintDesdetDesdeSQLite(
                     selectedFolio!); // 👈 Aquí va tu debug automático
               },
-
               cells: [
                 DataCell(Text(fila["FOLIO"] ?? ""), onTap: () {
                   setState(() {
                     selectedFolio = fila["FOLIO"];
                   });
-                  print("🔹 Folio seleccionado: $selectedFolio");
+                  debugPrint("🔹 Folio seleccionado: $selectedFolio");
                 }),
                 DataCell(Text(_formatDate(fila["FECHA"]))),
                 DataCell(Text(fila["EMPRESA"].toString())),
@@ -784,7 +784,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
   //   return Row(
   //     mainAxisAlignment: MainAxisAlignment.end,
   //     children: [
-  //       // NUEVO 
+  //       // NUEVO
   //       Tooltip(
   //         message: 'Nueva pila',
   //         child: IconButton(
@@ -792,7 +792,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
   //           onPressed: _generateFolioAndNavigate,
   //         ),
   //       ),
-       
+
   //       // DETALLES
   //       Tooltip(
   //         message: 'Detalles',
@@ -812,7 +812,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
   //               : null,
   //         ),
   //       ),
-  //        //ELIMINAR 
+  //        //ELIMINAR
   //       Tooltip(
   //         message: 'Eliminar folio',
   //         child: IconButton(
@@ -822,7 +822,7 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
   //               : null,
   //         ),
   //       ),
-  //       // SINCRONIZAR 
+  //       // SINCRONIZAR
   //       Tooltip(
   //         message: hayDatosLocalesPendientes
   //             ? 'Sincronizar registros pendientes'
@@ -841,90 +841,90 @@ class PiladesechoListScreenState extends State<PiladesechoListScreen> {
   //   );
 
   Widget _buildActionButtons() {
-  // Buscar los datos del folio seleccionado
-  final filaSeleccionada = pilasDesecho.firstWhere(
-    (e) => e["FOLIO"] == selectedFolio,
-    orElse: () => {},
-  );
+    // Buscar los datos del folio seleccionado
+    final filaSeleccionada = pilasDesecho.firstWhere(
+      (e) => e["FOLIO"] == selectedFolio,
+      orElse: () => {},
+    );
 
-  // Validar si la fecha es del mes actual
-  bool puedeEditar = false;
-  if (filaSeleccionada.isNotEmpty) {
-    try {
-      final fechaStr = filaSeleccionada["FECHA"];
-      final fecha = DateTime.parse(fechaStr);
-      final ahora = DateTime.now();
-      puedeEditar = fecha.month == ahora.month && fecha.year == ahora.year;
-    } catch (_) {
-      puedeEditar = false;
+    // Validar si la fecha es del mes actual
+    bool puedeEditar = false;
+    if (filaSeleccionada.isNotEmpty) {
+      try {
+        final fechaStr = filaSeleccionada["FECHA"];
+        final fecha = DateTime.parse(fechaStr);
+        final ahora = DateTime.now();
+        puedeEditar = fecha.month == ahora.month && fecha.year == ahora.year;
+      } catch (_) {
+        puedeEditar = false;
+      }
     }
-  }
 
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.end,
-    children: [
-      // NUEVO
-      Tooltip(
-        message: 'Nueva pila',
-        child: IconButton(
-          icon: const Icon(Icons.add, color: Colors.blue),
-          onPressed: _generateFolioAndNavigate,
-        ),
-      ),
-
-      // DETALLES
-      Tooltip(
-        message: puedeEditar
-            ? 'Ver detalles'
-            : 'Solo se puede editar en el mes actual',
-        child: IconButton(
-          icon: Icon(Icons.edit,
-              color: puedeEditar ? Colors.orange : Colors.grey),
-          onPressed: (selectedFolio != null && puedeEditar)
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PiladesechoListadesdetScreen(
-                        folio: selectedFolio!,
-                      ),
-                    ),
-                  ).then((_) => _fetchData());
-                }
-              : null,
-        ),
-      ),
-
-      // ELIMINAR
-      Tooltip(
-        message: puedeEditar
-            ? 'Eliminar folio'
-            : 'Solo se puede eliminar en el mes actual',
-        child: IconButton(
-          icon: Icon(Icons.delete_forever,
-              color: puedeEditar ? Colors.red : Colors.grey),
-          onPressed: (selectedFolio != null && puedeEditar)
-              ? () => _eliminarFolioDesmstr(selectedFolio!)
-              : null,
-        ),
-      ),
-
-      // SINCRONIZAR
-      Tooltip(
-        message: hayDatosLocalesPendientes
-            ? 'Sincronizar registros pendientes'
-            : 'Todo está sincronizado',
-        child: IconButton(
-          icon: Icon(
-            hayDatosLocalesPendientes ? Icons.outbox : Icons.done_all,
-            color: hayDatosLocalesPendientes ? Colors.red : Colors.grey,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // NUEVO
+        Tooltip(
+          message: 'Nueva pila',
+          child: IconButton(
+            icon: const Icon(Icons.add, color: Colors.blue),
+            onPressed: _generateFolioAndNavigate,
           ),
-          tooltip: 'Sincronizar',
-          onPressed:
-              hayDatosLocalesPendientes ? _enviarDatosPendientes : null,
         ),
-      ),
-    ],
-  );
-}
+
+        // DETALLES
+        Tooltip(
+          message: puedeEditar
+              ? 'Ver detalles'
+              : 'Solo se puede editar en el mes actual',
+          child: IconButton(
+            icon: Icon(Icons.edit,
+                color: puedeEditar ? Colors.orange : Colors.grey),
+            onPressed: (selectedFolio != null && puedeEditar)
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PiladesechoListadesdetScreen(
+                          folio: selectedFolio!,
+                        ),
+                      ),
+                    ).then((_) => _fetchData());
+                  }
+                : null,
+          ),
+        ),
+
+        // ELIMINAR
+        Tooltip(
+          message: puedeEditar
+              ? 'Eliminar folio'
+              : 'Solo se puede eliminar en el mes actual',
+          child: IconButton(
+            icon: Icon(Icons.delete_forever,
+                color: puedeEditar ? Colors.red : Colors.grey),
+            onPressed: (selectedFolio != null && puedeEditar)
+                ? () => _eliminarFolioDesmstr(selectedFolio!)
+                : null,
+          ),
+        ),
+
+        // SINCRONIZAR
+        Tooltip(
+          message: hayDatosLocalesPendientes
+              ? 'Sincronizar registros pendientes'
+              : 'Todo está sincronizado',
+          child: IconButton(
+            icon: Icon(
+              hayDatosLocalesPendientes ? Icons.outbox : Icons.done_all,
+              color: hayDatosLocalesPendientes ? Colors.red : Colors.grey,
+            ),
+            tooltip: 'Sincronizar',
+            onPressed:
+                hayDatosLocalesPendientes ? _enviarDatosPendientes : null,
+          ),
+        ),
+      ],
+    );
+  }
 }

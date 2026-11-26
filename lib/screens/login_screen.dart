@@ -10,7 +10,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 final Logger logger = Logger();
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   LoginScreenState createState() => LoginScreenState();
@@ -220,8 +220,9 @@ class LoginScreenState extends State<LoginScreen> {
       String baseId =
           (empresaData["BASE"] ?? empresaData["base"])?.toString() ?? "";
 
-      if (empresaId.isEmpty || baseId.isEmpty)
+      if (empresaId.isEmpty || baseId.isEmpty) {
         throw Exception("Empresa o Base vacía");
+      }
 
       if (await _authService.hasInternetConnection()) {
         final empresaResponse = await _authService.syncUsuarioEmpresaBase(
@@ -251,13 +252,12 @@ class LoginScreenState extends State<LoginScreen> {
         _passwordController.text = ''; // <-- Limpia el campo contraseña
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context); // ❌ Cierra el diálogo en caso de error
       logger.e("❌ Error durante la sincronización: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al cargar la aplicación: $e")),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al cargar la aplicación: $e")),
+      );
     }
   }
 
@@ -436,7 +436,7 @@ class LoginScreenState extends State<LoginScreen> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

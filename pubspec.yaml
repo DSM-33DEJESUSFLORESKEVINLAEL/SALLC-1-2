@@ -29,8 +29,7 @@ dependencies:
   http: ^0.13.6  # Asegúrate de que esta línea esté presente
   animated_text_kit: ^4.2.2  # Asegúrate de usar la última versión
   font_awesome_flutter: ^10.7.0
-  flutter_typeahead: ^4.3.7  # Asegúrate de agregar esta línea
-  flutter_keyboard_visibility: ^5.4.1
+  flutter_typeahead: ^5.2.0
   permission_handler: ^11.0.1
   package_info_plus: ^6.0.0  # o la versión más reciente
 

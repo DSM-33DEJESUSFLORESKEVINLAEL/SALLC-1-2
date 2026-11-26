@@ -20,6 +20,8 @@ class ExportarBDButton extends StatelessWidget {
         }
       }
 
+      if (!context.mounted) return;
+
       if (!tienePermiso) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('❌ Permiso denegado')),
@@ -32,7 +34,9 @@ class ExportarBDButton extends StatelessWidget {
       final destino = '/sdcard/Download/app_database_v6.db';
 
       final archivo = File(origen);
-      if (!await archivo.exists()) {
+      final existe = await archivo.exists();
+      if (!context.mounted) return;
+      if (!existe) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('❌ La base de datos no existe')),
         );
@@ -41,10 +45,12 @@ class ExportarBDButton extends StatelessWidget {
 
       await archivo.copy(destino);
 
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('✅ Exportado con éxito a: $destino')),
       );
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Error exportando: $e')),
       );

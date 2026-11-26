@@ -56,7 +56,8 @@ class HomeScreenState extends State<HomeScreen> {
       });
       // _logger.i("🔹 Empresa y base cargadas: EMPRESA=$empresa, BASE=$base");
     } else {
-      _logger.w("⚠️ No se encontraron datos de empresa y base en SharedPreferences.");
+      _logger.w(
+          "⚠️ No se encontraron datos de empresa y base en SharedPreferences.");
     }
   }
 
@@ -72,11 +73,11 @@ class HomeScreenState extends State<HomeScreen> {
 
     setState(() {});
   }
-void _onItemTapped(int index) {
-  print("🔁 Cambiando a pestaña: $index");
-  setState(() => _selectedIndex = index);
-}
-  
+
+  void _onItemTapped(int index) {
+    debugPrint("🔁 Cambiando a pestaña: $index");
+    setState(() => _selectedIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +96,8 @@ void _onItemTapped(int index) {
   Widget _buildWelcomeScreen() {
     return FadeIn(
       duration: const Duration(milliseconds: 500),
-      child: SingleChildScrollView( // 🚀 Agregar scroll para evitar overflow
+      child: SingleChildScrollView(
+        // 🚀 Agregar scroll para evitar overflow
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -107,17 +109,21 @@ void _onItemTapped(int index) {
               FadeInDown(
                 duration: const Duration(milliseconds: 600),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Colors.blueAccent, Colors.blueAccent],
-                    // colors: [Color.fromARGB(255, 255, 255, 255), Colors.blueAccent],
+                      // colors: [Color.fromARGB(255, 255, 255, 255), Colors.blueAccent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
-                      BoxShadow(color: const Color.fromARGB(66, 75, 74, 74), blurRadius: 5, offset: Offset(2, 4)),
+                      BoxShadow(
+                          color: const Color.fromARGB(66, 75, 74, 74),
+                          blurRadius: 5,
+                          offset: Offset(2, 4)),
                     ],
                   ),
                   child: const Text(
@@ -129,7 +135,7 @@ void _onItemTapped(int index) {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                ), 
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -137,7 +143,8 @@ void _onItemTapped(int index) {
               // 🔹 Animación en el icono
               Bounce(
                 duration: const Duration(milliseconds: 800),
-                child: const Icon(Icons.local_shipping, size: 80, color: Colors.amber),
+                child: const Icon(Icons.local_shipping,
+                    size: 80, color: Colors.amber),
               ),
               const SizedBox(height: 10),
 
@@ -147,7 +154,10 @@ void _onItemTapped(int index) {
                 child: const Text(
                   "Sistema de Administración de Llantas para CEDIS (SALLC)",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.amber),
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber),
                 ),
               ),
 
@@ -194,25 +204,30 @@ void _onItemTapped(int index) {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent),
             ),
             const SizedBox(height: 8),
             Divider(),
             ...points.map((point) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(point, style: const TextStyle(fontSize: 16))),
-                ],
-              ),
-            )).toList(),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: Colors.green, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Text(point,
+                              style: const TextStyle(fontSize: 16))),
+                    ],
+                  ),
+                )),
           ],
         ),
       ),
     );
   }
 }
-

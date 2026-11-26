@@ -8,7 +8,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
@@ -63,11 +63,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint("⚠️ No se encontraron datos en SharedPreferences.");
     }
   }
-  
+
   void _onItemTapped(int index) {
     Navigator.pop(context);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 10),
               Text(
                 nombreusuario,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               Text(
                 puesto,
@@ -127,9 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-      
     );
-    
   }
 
   /// 🔹 Método para construir tarjetas con información

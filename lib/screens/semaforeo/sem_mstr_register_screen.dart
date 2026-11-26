@@ -54,14 +54,14 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
   final List<TextEditingController> mmControllers =
       List.generate(12, (_) => TextEditingController());
   // final List<TextEditingController> orControllers = List.generate(12, (_) => TextEditingController());
-  final List<String> ORList = List.filled(12, "");
+  final List<String> orList = List.filled(12, "");
   final List<TextEditingController> dotControllers =
       List.generate(12, (_) => TextEditingController());
   final List<String> clasifMarcaList = List.filled(12, "");
   final List<String> observacionLlantaList =
       List.filled(12, ''); // <- en vez de "", pon un valor válido
 
-  final List<String> OROptions = ['', 'O', 'R'];
+  final List<String> orOptions = ['', 'O', 'R'];
   final List<String> clasifOptions = ['', 'PREMIUM', 'OTRAS'];
   final List<String> observacionOptions = [
     '',
@@ -83,7 +83,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
   String base = "";
   String operador = "";
   List<String> _opcionesUnidad = [];
-  List<String> _opcionesTipoUnidad = [];
+  final List<String> _opcionesTipoUnidad = [];
   List<String> _opcionesMedida = [];
   Map<String, String> unidadTipoUnidadMap = {};
   Map<String, Map<String, dynamic>> unidadInfoMap = {}; // 👈 aquí en el state
@@ -120,7 +120,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
         mmControllers[i].text = data['mm$pos']?.toString() == 'null'
             ? ''
             : data['mm$pos']?.toString() ?? '';
-        ORList[i] = data['or$pos']?.toString() == 'null'
+        orList[i] = data['or$pos']?.toString() == 'null'
             ? ''
             : data['or$pos']?.toString() ?? '';
         dotControllers[i].text = data['dot$pos']?.toString() == 'null'
@@ -251,7 +251,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
     for (int i = 0; i < numPosiciones; i++) {
       final mmStr = mmControllers[i].text.trim();
       final obs = observacionLlantaList[i].trim();
-      final or = ORList[i].trim();
+      final or = orList[i].trim();
 
       final hasDatos = mmStr.isNotEmpty || obs.isNotEmpty;
       if (hasDatos) {
@@ -370,6 +370,8 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
       folioGenerado,
     );
 
+    if (!mounted) return;
+
     // 🔎 Filtrar solo las que están en la lista de unidades válidas
     final unidadesFiltradas = unidadesData
         .where((item) =>
@@ -407,6 +409,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
       );
     }
 
+    if (!mounted) return;
     setState(() {
       unidadController.text = '';
       tipoUnidadController.text = '';
@@ -419,8 +422,8 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
       for (var controller in dotControllers) {
         controller.clear();
       }
-      for (int i = 0; i < ORList.length; i++) {
-        ORList[i] = '';
+      for (int i = 0; i < orList.length; i++) {
+        orList[i] = '';
       }
       for (int i = 0; i < clasifMarcaList.length; i++) {
         clasifMarcaList[i] = '';
@@ -453,6 +456,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
 
   void _handleSaveOrUpdateSemaforo() async {
     final stats = await _actualizarDatosEstadisticos();
+    if (!mounted) return;
     if (empresa.isEmpty || folioController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("⚠️ Empresa o Folio no definidos")),
@@ -539,7 +543,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
       int pos = i + 1;
       detData["MM$pos"] =
           mmControllers[i].text.isEmpty ? "null" : mmControllers[i].text;
-      detData["OR$pos"] = ORList[i].isEmpty ? "null" : ORList[i];
+      detData["OR$pos"] = orList[i].isEmpty ? "null" : orList[i];
       detData["OBS$pos"] =
           observacionLlantaList[i].isEmpty ? "null" : observacionLlantaList[i];
     }
@@ -622,6 +626,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
             await DBOperations.instance.insert('sem_det', detData);
           }
 
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(isUpdate
                 ? "✅ Registro actualizado correctamente."
@@ -680,12 +685,14 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
       }
 
       logger.i("💾 Guardado local exitoso.");
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(mensaje)));
 
       // _limpiarFormulario(); // <-- limpia el formulario
     } catch (e) {
       logger.e("❌ Error al guardar localmente: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❌ Error al guardar en SQLite.")),
       );
@@ -829,13 +836,30 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: TypeAheadFormField<String>(
-          textFieldConfiguration: TextFieldConfiguration(
-            controller: controller,
+        child: TypeAheadField<String>(
+          controller: controller,
+          builder: (context, fieldController, focusNode) => TextFormField(
+            controller: fieldController,
+            focusNode: focusNode,
             decoration: InputDecoration(
               labelText: label,
               suffixIcon: const Icon(Icons.arrow_drop_down),
             ),
+            validator: (value) {
+              if (value == null || !_opcionesUnidad.contains(value.trim())) {
+                return "Unidad no válida";
+              }
+              return null;
+            },
+            onSaved: (_) {
+              final unidad = controller.text.trim();
+              if (!_opcionesUnidad.contains(unidad)) {
+                controller.clear();
+                tipoUnidadController.clear();
+              } else {
+                tipoUnidadController.text = unidadTipoUnidadMap[unidad] ?? '';
+              }
+            },
           ),
           suggestionsCallback: (pattern) {
             // Si el campo está vacío, muestra todas las sugerencias
@@ -850,7 +874,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
           itemBuilder: (context, String suggestion) {
             return ListTile(title: Text(suggestion));
           },
-          onSuggestionSelected: (String suggestion) {
+          onSelected: (String suggestion) {
             setState(() {
               controller.text = suggestion;
               // tipoUnidadController.text = unidadTipoUnidadMap[suggestion] ?? '';
@@ -868,7 +892,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
             });
           },
 
-          noItemsFoundBuilder: (context) => const Padding(
+          emptyBuilder: (context) => const Padding(
             padding: EdgeInsets.all(8.0),
             child: Text("No se encontraron coincidencias"),
           ),
@@ -882,21 +906,6 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
           //     tipoUnidadController.text = unidadTipoUnidadMap[unidad] ?? '';
           //   }
           // }
-          validator: (value) {
-            if (value == null || !_opcionesUnidad.contains(value.trim())) {
-              return "Unidad no válida";
-            }
-            return null;
-          },
-          onSaved: (_) {
-            final unidad = controller.text.trim();
-            if (!_opcionesUnidad.contains(unidad)) {
-              controller.clear();
-              tipoUnidadController.clear();
-            } else {
-              tipoUnidadController.text = unidadTipoUnidadMap[unidad] ?? '';
-            }
-          },
         ),
       ),
     );
@@ -910,9 +919,11 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: TypeAheadFormField<String>(
-          textFieldConfiguration: TextFieldConfiguration(
-            controller: controller,
+        child: TypeAheadField<String>(
+          controller: controller,
+          builder: (context, fieldController, focusNode) => TextFormField(
+            controller: fieldController,
+            focusNode: focusNode,
             inputFormatters: [
               UpperCaseTextFormatter(), // 👈 aquí se aplica
             ],
@@ -941,12 +952,12 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
               title: Text(suggestion),
             );
           },
-          onSuggestionSelected: (String suggestion) {
+          onSelected: (String suggestion) {
             setState(() {
               controller.text = suggestion;
             });
           },
-          noItemsFoundBuilder: (context) => const Padding(
+          emptyBuilder: (context) => const Padding(
             padding: EdgeInsets.all(8.0),
             child: Text("No se encontraron coincidencias"),
           ),
@@ -1048,7 +1059,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
                     children: [
                       SizedBox(width: 40, child: Text("${index + 1}")),
                       _buildSizedField(mmControllers[index], 50),
-                      _buildDropdown(index, ORList, OROptions, 55),
+                      _buildDropdown(index, orList, orOptions, 55),
                       _buildSizedField(dotControllers[index], 60),
                       _buildDropdown(
                           index, clasifMarcaList, clasifOptions, 130),
@@ -1101,7 +1112,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                               child: _buildDropdown(
-                                  index, ORList, OROptions, double.infinity,
+                                  index, orList, orOptions, double.infinity,
                                   label: "O/R")),
                         ],
                       ),
@@ -1198,9 +1209,11 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: TypeAheadFormField<String>(
-          textFieldConfiguration: TextFieldConfiguration(
-            controller: medidaDireccionController,
+        child: TypeAheadField<String>(
+          controller: medidaDireccionController,
+          builder: (context, fieldController, focusNode) => TextFormField(
+            controller: fieldController,
+            focusNode: focusNode,
             decoration: const InputDecoration(
               labelText: "Medida dirección",
               suffixIcon: Icon(Icons.arrow_drop_down),
@@ -1215,7 +1228,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
           itemBuilder: (context, String suggestion) {
             return ListTile(title: Text(suggestion));
           },
-          onSuggestionSelected: (String suggestion) {
+          onSelected: (String suggestion) {
             setState(() {
               medidaDireccionController.text = suggestion;
               // ✅ Copiar valor a medida trasera por defecto
@@ -1224,7 +1237,7 @@ class _SemaforoRegisterScreenState extends State<SemaforoRegisterScreen> {
               }
             });
           },
-          noItemsFoundBuilder: (context) => const Padding(
+          emptyBuilder: (context) => const Padding(
             padding: EdgeInsets.all(8.0),
             child: Text("No se encontraron coincidencias"),
           ),

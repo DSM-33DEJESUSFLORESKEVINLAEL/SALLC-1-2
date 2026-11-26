@@ -29,7 +29,7 @@ class PiladesechoListadesdetScreenState
   @override
   void initState() {
     super.initState();
-    print("🟦 Cargando detalles para folio: ${widget.folio}");
+    debugPrint("🟦 Cargando detalles para folio: ${widget.folio}");
     _loadEmpresaBase();
   }
 
@@ -148,6 +148,8 @@ class PiladesechoListadesdetScreenState
 
         final response = await http.delete(Uri.parse(url));
 
+        if (!mounted) return;
+
         if (response.statusCode == 200) {
           // ✅ Eliminar localmente después de confirmar éxito del servidor
           final db = await dbHelper.database;
@@ -156,6 +158,8 @@ class PiladesechoListadesdetScreenState
             where: 'folio = ? AND reg = ?',
             whereArgs: [detalle.folio, detalle.reg],
           );
+
+          if (!mounted) return;
 
           if (deleted > 0) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +181,7 @@ class PiladesechoListadesdetScreenState
         }
       } catch (e) {
         debugPrint("❌ Error al eliminar: $e");
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text("❌ Ocurrió un error al eliminar el registro.")),
@@ -188,23 +193,22 @@ class PiladesechoListadesdetScreenState
 //----------------------------funcion para editar------------------------------------------------
 
   void _editarFilaDesdet(DesDet detalle) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => PilaRegisterMtrScreen(
-        folio: detalle.folio,
-        nuevoFolio: false,
-        folioExistente: detalle.folio,
-        desdet: detalle, // 👈 Pasa el objeto completo
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PilaRegisterMtrScreen(
+          folio: detalle.folio,
+          nuevoFolio: false,
+          folioExistente: detalle.folio,
+          desdet: detalle, // 👈 Pasa el objeto completo
+        ),
       ),
-    ),
-  ).then((value) {
-    if (value != null && value is String) {
-      _syncAndLoadData(); // Recarga al volver
-    }
-  });
-}
-
+    ).then((value) {
+      if (value != null && value is String) {
+        _syncAndLoadData(); // Recarga al volver
+      }
+    });
+  }
 
 //-------------------------- funcion para remover duplicados--------------------------------------
 
@@ -261,18 +265,18 @@ class PiladesechoListadesdetScreenState
             return DataRow(
               color: WidgetStateProperty.resolveWith<Color?>(
                 (Set<WidgetState> states) {
-                  if (estaSincronizado)
-                    return Colors.green.withOpacity(0.2); // Verde suave
+                  if (estaSincronizado) {
+                    return Colors.green.withValues(alpha: 0.2); // Verde suave
+                  }
                   return null; // Blanco por defecto
                 },
               ),
-
-              
               cells: [
                 DataCell(Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.edit_note, color: Color.fromARGB(255, 10, 71, 150)),
+                      icon: const Icon(Icons.edit_note,
+                          color: Color.fromARGB(255, 10, 71, 150)),
                       tooltip: "Editar",
                       onPressed: () => _editarFilaDesdet(detalle),
                     ),

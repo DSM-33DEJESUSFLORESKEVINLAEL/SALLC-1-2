@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:miapp/models/desmstr.dart';
 
 import 'opciontablas.dart';
 
 class Queries {
-  Future<List<Map<String, dynamic>>> sqllogin(String usuario, String clave) async {
+  Future<List<Map<String, dynamic>>> sqllogin(
+      String usuario, String clave) async {
     final db = await DatabaseHelper.instance.database;
     return await db.rawQuery('''
       SELECT accesos_usuarios.empresa, empresas.nombre AS nombre_empresa, accesos_usuarios.base
@@ -13,7 +15,8 @@ class Queries {
     ''', [usuario, clave]);
   }
 
-  Future<List<Map<String, dynamic>>> sqlUsuarioEmpresaBase(String usuario, String clave, String empresa, String base) async {
+  Future<List<Map<String, dynamic>>> sqlUsuarioEmpresaBase(
+      String usuario, String clave, String empresa, String base) async {
     final db = await DatabaseHelper.instance.database;
     return await db.rawQuery('''
       SELECT accesos_usuarios.usuario, accesos_usuarios.nombre AS nombreusuario, accesos_usuarios.psw,
@@ -28,7 +31,8 @@ class Queries {
     ''', [usuario, clave, empresa, base]);
   }
 
-  Future<List<Map<String, dynamic>>> sqlAccesos(String empresa, String base, String usuario) async {
+  Future<List<Map<String, dynamic>>> sqlAccesos(
+      String empresa, String base, String usuario) async {
     final db = await DatabaseHelper.instance.database;
     return await db.rawQuery('''
       SELECT DISTINCT acceso 
@@ -37,7 +41,8 @@ class Queries {
     ''', [empresa, base, usuario]);
   }
 
-  Future<List<Map<String, dynamic>>> sqlListaPilaDesecho(String empresa, String base, String fechaInicio, String fechaFin) async {
+  Future<List<Map<String, dynamic>>> sqlListaPilaDesecho(
+      String empresa, String base, String fechaInicio, String fechaFin) async {
     final db = await DatabaseHelper.instance.database;
     return await db.rawQuery('''
       SELECT desmstr.folio, desmstr.fecha, desmstr.empresa, desmstr.base, desmstr.sis_medida, 
@@ -49,9 +54,9 @@ class Queries {
     ''', [empresa, base, fechaInicio, fechaFin]);
   }
 
-Future<List<DesMstr>> sqlListaEsteMes(String empresa, String base) async {
-  final db = await DatabaseHelper.instance.database;
-  List<Map<String, dynamic>> results = await db.rawQuery('''
+  Future<List<DesMstr>> sqlListaEsteMes(String empresa, String base) async {
+    final db = await DatabaseHelper.instance.database;
+    List<Map<String, dynamic>> results = await db.rawQuery('''
     SELECT empresa, base, folio, fecha, sis_medida, operador, 
            num_semana, num_mes, nregistros, fsistema
     FROM desmstr
@@ -60,16 +65,13 @@ Future<List<DesMstr>> sqlListaEsteMes(String empresa, String base) async {
     ORDER BY fecha DESC, folio DESC
   ''', [empresa, base]);
 
-  print("📌 Registros encontrados en SQLite: ${results.length}");
-  for (var item in results) {
-    print("📌 Registro consultas tablas: $item");
+    debugPrint("📌 Registros encontrados en SQLite: ${results.length}");
+    for (var item in results) {
+      debugPrint("📌 Registro consultas tablas: $item");
+    }
+
+    return results.map((map) => DesMstr.fromMap(map)).toList();
   }
-
-  return results.map((map) => DesMstr.fromMap(map)).toList();
-}
-
-
-
 
   Future<List<DesMstr>> sqlListaMesAnterior(String empresa, String base) async {
     final db = await DatabaseHelper.instance.database;
@@ -118,8 +120,6 @@ Future<List<DesMstr>> sqlListaEsteMes(String empresa, String base) async {
         AND base = ?
       ORDER BY fecha DESC, folio DESC
     ''', [fecha, empresa, base]);
-
-
 
     return result.map((map) => DesMstr.fromMap(map)).toList();
   }

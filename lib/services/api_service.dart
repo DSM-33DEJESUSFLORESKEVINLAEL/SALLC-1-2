@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io'; // Para detectar si hay conexión a internet
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 // import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -88,7 +89,6 @@ class AuthService {
 //     return false;
 //   }
 // }
-
 
   /// 🔹 **Login desde el servidor**
   Future<Map<String, dynamic>?> _loginFromServer(
@@ -294,7 +294,6 @@ class AuthService {
     return "SIN_SERIE"; // Evita valores erróneos
   }
 
-
   Future<List<dynamic>> _fetchData(String endpoint, String resourceName) async {
     try {
       String url = '$_baseUrl/$endpoint';
@@ -360,22 +359,25 @@ class AuthService {
   ) async =>
       _fetchData('GetListaAnteriores/$empresaId/$baseId', "FECHAANTERIORES");
 
-Future<List<dynamic>> getDesDetxFolio(int empresaId, String baseId, String folio) async =>
+  Future<List<dynamic>> getDesDetxFolio(
+          int empresaId, String baseId, String folio) async =>
       _fetchData('DesDetxFolio/$empresaId/$baseId/$folio', "DesDetxFolio");
 
-Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) insertFunction, String tableName) async {
-  if (dataList.isNotEmpty) {
-    // _logger.i("📌 Intentando insertar ${dataList.length} registros en $tableName: $dataList");
-    try {
-      await insertFunction(dataList);
-      _logger.i("✅ Datos insertados en $tableName correctamente de api_service.");
-    } catch (e) {
-      _logger.e("❌ Error al insertar datos en $tableName: $e");
+  Future<void> _insertData<T>(List<T> dataList,
+      Future<void> Function(List<T>) insertFunction, String tableName) async {
+    if (dataList.isNotEmpty) {
+      // _logger.i("📌 Intentando insertar ${dataList.length} registros en $tableName: $dataList");
+      try {
+        await insertFunction(dataList);
+        _logger.i(
+            "✅ Datos insertados en $tableName correctamente de api_service.");
+      } catch (e) {
+        _logger.e("❌ Error al insertar datos en $tableName: $e");
+      }
+    } else {
+      _logger.w("⚠️ No hay datos para insertar en $tableName.");
     }
-  } else {
-    _logger.w("⚠️ No hay datos para insertar en $tableName.");
   }
-}
 
   /// 🔹 Uso del método genérico para insertar los datos obtenidos de la API
   Future<void> syncData(int empresaId, String baseId, String serie) async {
@@ -386,7 +388,8 @@ Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) ins
       // 📌 Obtener datos desde la API
       final medidasResponse = await getMedidasLista(empresaId);
       // final marcasResponse = await getMarcasLista(empresaId);
-      final marcasResponse = await getMarcasLista(empresaId); await insertarMarcasDesdeServidor(marcasResponse);
+      final marcasResponse = await getMarcasLista(empresaId);
+      await insertarMarcasDesdeServidor(marcasResponse);
       final fallasResponse = await getFallasLista(empresaId);
       final modeloRenovadoResponse = await getModeloRenovadoLista(empresaId);
       final rangoCargaResponse = await getRangoCargaLista(empresaId);
@@ -395,10 +398,13 @@ Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) ins
       final marcaRenovadoResponse = await getMarcaRenovadoLista(empresaId);
       final unidadesResponse = await getUnidadesLista(empresaId, baseId, serie);
       final pilaEsteMesResponse = await getListaEsteMes(empresaId, baseId);
-      final pilaMesAnteriorResponse = await getListaMesAnterior(empresaId, baseId);
+      final pilaMesAnteriorResponse =
+          await getListaMesAnterior(empresaId, baseId);
       final pilaEsteAAAResponse = await getListaEsteAAA(empresaId, baseId);
-      final pilaAnterioresResponse = await getListaAnteriores(empresaId, baseId);
-      final desDetxFolioResponse = await getDesDetxFolio(empresaId, baseId, serie);
+      final pilaAnterioresResponse =
+          await getListaAnteriores(empresaId, baseId);
+      final desDetxFolioResponse =
+          await getDesDetxFolio(empresaId, baseId, serie);
 
       // 📌 Convertir respuestas a listas de modelos
       List<Medida> medidaList = medidasResponse
@@ -428,7 +434,7 @@ Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) ins
       List<Unidad> unidadList = unidadesResponse
           .map((e) => Unidad.fromMap(e as Map<String, dynamic>))
           .toList();
-        // List<DesMstr> pilaDesechoList = [
+      // List<DesMstr> pilaDesechoList = [
       [
         ...pilaEsteMesResponse,
         ...pilaMesAnteriorResponse,
@@ -438,10 +444,8 @@ Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) ins
       List<DesDet> desDetList = desDetxFolioResponse
           .map((e) => DesDet.fromMap(e as Map<String, dynamic>))
           .toList();
-      
 
-    //  await _dbHelper.deleteDesDetByFolio(serie); // Usas `serie` como folio actual aquí
-
+      //  await _dbHelper.deleteDesDetByFolio(serie); // Usas `serie` como folio actual aquí
 
       // 📌 Insertar datos en SQLite usando el método genérico
       await _insertData(medidaList, _dbHelper.insertMedidas, "medidas");
@@ -460,16 +464,14 @@ Future<void> _insertData<T>(List<T> dataList, Future<void> Function(List<T>) ins
       // await _insertData(pilaDesechoList, _dbHelper.insertDesMstr, "desmstr");
       await _insertData(desDetList, _dbHelper.insertDesDet, "desdet");
 
-
-
       _logger.i("✅ Sincronización de datos completada.");
     } catch (e, stacktrace) {
       _logger.e("❌ Error en la sincronización: $e\n$stacktrace");
     }
   }
 
-
-Future<String?> obtenerFoliopiladesecho(String empresa, String base, String serie) async {
+  Future<String?> obtenerFoliopiladesecho(
+      String empresa, String base, String serie) async {
     if (empresa.isEmpty || base.isEmpty || serie.isEmpty) {
       _logger.e('Parámetros insuficientes para obtener el folio.');
       return null;
@@ -482,12 +484,15 @@ Future<String?> obtenerFoliopiladesecho(String empresa, String base, String seri
       Response response = await _dio.get(url);
       Map<String, dynamic> data = response.data;
 
-      if (data.containsKey('DATA') && data['DATA'] is List && data['DATA'].isNotEmpty) {
+      if (data.containsKey('DATA') &&
+          data['DATA'] is List &&
+          data['DATA'].isNotEmpty) {
         String folioActual = data['DATA'][0]['FOLIO'];
         _logger.i('Folio actual obtenido de la API: $folioActual');
         return _incrementarFolio(folioActual);
       } else {
-        _logger.w('No se encontraron datos en la API. Intentando con SharedPreferences...');
+        _logger.w(
+            'No se encontraron datos en la API. Intentando con SharedPreferences...');
         return await _obtenerFolioDesdeSharedPreferences(serie);
       }
     } catch (e) {
@@ -495,114 +500,109 @@ Future<String?> obtenerFoliopiladesecho(String empresa, String base, String seri
       _logger.w('Intentando obtener folio desde SharedPreferences...');
       return await _obtenerFolioDesdeSharedPreferences(serie);
     }
-}
+  }
 
+  Future<String?> _obtenerFolioDesdeSharedPreferences(String serie) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-Future<String?> _obtenerFolioDesdeSharedPreferences(String serie) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
+    try {
+      final String? jsonRegistros = prefs.getString("ultimosRegistros");
 
-  try {
-    final String? jsonRegistros = prefs.getString("ultimosRegistros");
+      if (jsonRegistros != null && jsonRegistros.isNotEmpty) {
+        final List<dynamic> decodedList = jsonDecode(jsonRegistros);
 
-    if (jsonRegistros != null && jsonRegistros.isNotEmpty) {
-      final List<dynamic> decodedList = jsonDecode(jsonRegistros);
+        if (decodedList.isNotEmpty && decodedList[0] is Map<String, dynamic>) {
+          final Map<String, dynamic> primerRegistro = decodedList[0];
+          final String? folioActual = primerRegistro['FOLIO'];
 
-      if (decodedList.isNotEmpty && decodedList[0] is Map<String, dynamic>) {
-        final Map<String, dynamic> primerRegistro = decodedList[0];
-        final String? folioActual = primerRegistro['FOLIO'];
-
-        if (folioActual != null && folioActual.isNotEmpty) {
-          _logger.i('✅ Folio obtenido de SharedPreferences: $folioActual');
-          return _incrementarFolio(folioActual);
+          if (folioActual != null && folioActual.isNotEmpty) {
+            _logger.i('✅ Folio obtenido de SharedPreferences: $folioActual');
+            return _incrementarFolio(folioActual);
+          }
         }
       }
+
+      _logger.w(
+          '⚠️ No se encontró un folio válido en SharedPreferences. Generando folio inicial.');
+      return '${serie}0001';
+    } catch (e) {
+      _logger.e('❌ Error leyendo SharedPreferences: $e');
+      return '${serie}0001';
     }
-
-    _logger.w('⚠️ No se encontró un folio válido en SharedPreferences. Generando folio inicial.');
-    return '${serie}0001';
-
-  } catch (e) {
-    _logger.e('❌ Error leyendo SharedPreferences: $e');
-    return '${serie}0001';
   }
-}
 
-
-String _incrementarFolio(String folioActual) {
+  String _incrementarFolio(String folioActual) {
     String prefijo = folioActual.replaceAll(RegExp(r'\d'), '');
     String numero = folioActual.replaceAll(RegExp(r'\D'), '');
     int nuevoNumero = int.parse(numero) + 1;
     return '$prefijo${nuevoNumero.toString().padLeft(numero.length, '0')}';
-}
+  }
 
-Future<bool> hayDatosNoSincronizados() async {
-  final db = await DatabaseHelper.instance.database;
+  Future<bool> hayDatosNoSincronizados() async {
+    final db = await DatabaseHelper.instance.database;
 
-  final desdet = await db.query('desdet', where: 'sincronizado = 0');
-  final desmstr = await db.query('desmstr', where: 'sincronizado = 0');
+    final desdet = await db.query('desdet', where: 'sincronizado = 0');
+    final desmstr = await db.query('desmstr', where: 'sincronizado = 0');
 
-  return desdet.isNotEmpty || desmstr.isNotEmpty;
-}
-/// ----------------CATALOGO  --------------------------------------------------------------------
-/// 
+    return desdet.isNotEmpty || desmstr.isNotEmpty;
+  }
 
-/// 🔹 Ejecuta una instrucción SQL en el servidor y verifica si fue exitosa
-Future<bool> ejecutarSQLRemoto(String sql) async {
-  final String url = "$_baseUrl/SQL_insert_update_delete/$sql";
-  try {
-    final response = await http.get(Uri.parse(url));
+  /// ----------------CATALOGO  --------------------------------------------------------------------
+  ///
 
-    if (response.statusCode == 200) {
-      final body = response.body.trim().toLowerCase();
-      // _logger.i("🛰 SQL ejecutado: $sql → Respuesta: $body");
+  /// 🔹 Ejecuta una instrucción SQL en el servidor y verifica si fue exitosa
+  Future<bool> ejecutarSQLRemoto(String sql) async {
+    final String url = "$_baseUrl/SQL_insert_update_delete/$sql";
+    try {
+      final response = await http.get(Uri.parse(url));
 
-      // ✅ Asegura que no solo llegó 200, sino que respondió algo como "true" o "ok"
-      return body.contains("true") || body.contains("ok");
-    } else {
-      _logger.w("⚠️ Error HTTP al ejecutar SQL: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final body = response.body.trim().toLowerCase();
+        // _logger.i("🛰 SQL ejecutado: $sql → Respuesta: $body");
+
+        // ✅ Asegura que no solo llegó 200, sino que respondió algo como "true" o "ok"
+        return body.contains("true") || body.contains("ok");
+      } else {
+        _logger.w("⚠️ Error HTTP al ejecutar SQL: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      _logger.e("❌ Error al ejecutar SQL remoto: $e");
       return false;
     }
-  } catch (e) {
-    _logger.e("❌ Error al ejecutar SQL remoto: $e");
-    return false;
   }
-}
 
+  /// ----------------SEMAFOREO --------------------------------------------------------------------
 
+  /// 🔹 Obtiene datos del semaforeo desde la API
+  Future<List<Map<String, dynamic>>> getSemaforeo(
+      int empresaId, String baseId, int fechaDesde, int fechaHasta) async {
+    try {
+      final String url =
+          '$_baseUrl/Semaforeo/$empresaId/$baseId/$fechaDesde/$fechaHasta';
 
+      _logger.i('📡 Consultando semaforeo: $url');
 
-/// ----------------SEMAFOREO --------------------------------------------------------------------
+      final response = await _dio.get(url);
 
-/// 🔹 Obtiene datos del semaforeo desde la API
-Future<List<Map<String, dynamic>>> getSemaforeo(
-    int empresaId, String baseId, int fechaDesde, int fechaHasta) async {
-  try {
-    final String url =
-        '$_baseUrl/Semaforeo/$empresaId/$baseId/$fechaDesde/$fechaHasta';
-
-    _logger.i('📡 Consultando semaforeo: $url');
-
-    final response = await _dio.get(url);
-
-    if (response.statusCode == 200 && response.data != null) {
-      final data = response.data['DATA'];
-      if (data != null && data is List) {
-        _logger.i("✅ ${data.length} registros recibidos del semaforeo");
-        return List<Map<String, dynamic>>.from(data);
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data['DATA'];
+        if (data != null && data is List) {
+          _logger.i("✅ ${data.length} registros recibidos del semaforeo");
+          return List<Map<String, dynamic>>.from(data);
+        } else {
+          _logger.w("⚠️ Respuesta sin datos válidos.");
+          return [];
+        }
       } else {
-        _logger.w("⚠️ Respuesta sin datos válidos.");
+        _logger.e("❌ Error de respuesta HTTP: ${response.statusCode}");
         return [];
       }
-    } else {
-      _logger.e("❌ Error de respuesta HTTP: ${response.statusCode}");
+    } catch (e) {
+      _logger.e("🚨 Error en getSemaforeo: $e");
       return [];
     }
-  } catch (e) {
-    _logger.e("🚨 Error en getSemaforeo: $e");
-    return [];
   }
-}
-
 
 // Future<List<String>> getUnidadesDisponibles(String empresa, String base, String folio) async {
 //   final url = Uri.parse('$_baseUrl/UnidadesSemaforo/$empresa/$base/$folio');
@@ -617,114 +617,111 @@ Future<List<Map<String, dynamic>>> getSemaforeo(
 //   return [];
 // }
 
-Future<List<String>> getUnidadesDisponibles(String empresa, String base, String folio) async {
-  final url = Uri.parse('$_baseUrl/UnidadesSemaforo/$empresa/$base/$folio');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final json = jsonDecode(response.body);
-
-    // ⚠️ Validación importante para evitar el error
-    if (json['DATA'] != null && json['DATA'] is List) {
-      final data = json['DATA'] as List;
-      return data.map<String>((e) => e['UNIDAD'].toString()).toList();
-    } else {
-      return []; // ⛔ Retorna lista vacía si DATA viene null o no es lista
-    }
-  }
-
-  return [];
-}
-
-Future<List<Map<String, dynamic>>> getUnidadesDisponiblesFull(
-    String empresa, String base, String folio) async {
-  final url = Uri.parse('$_baseUrl/unidadesLista/$empresa/$base/$folio');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final json = jsonDecode(response.body);
-
-    if (json['DATA'] != null && json['DATA'] is List) {
-      return List<Map<String, dynamic>>.from(json['DATA']);
-    }
-  }
-
-  return [];
-}
-
-
-Future<bool> validarUnidadEnServidor(
-    String empresa, String base, String folio, String unidad) async {
-  final url = Uri.parse(
-    "$_baseUrl/validaUnidad/$empresa/$base/$folio/$unidad"
-  );
-
-  _logger.i("🌐 URL: $url");
-
-  try {
+  Future<List<String>> getUnidadesDisponibles(
+      String empresa, String base, String folio) async {
+    final url = Uri.parse('$_baseUrl/UnidadesSemaforo/$empresa/$base/$folio');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final body = response.body.trim().toLowerCase().replaceAll('"', '');
-      final resultado = body == "true";
+      final json = jsonDecode(response.body);
 
-      _logger.i("🔍 Resultado procesado: unidad=$unidad ➤ registrado=$resultado");
-      return resultado;
-    } else {
-      _logger.w("⚠️ Respuesta HTTP no exitosa: ${response.statusCode}");
+      // ⚠️ Validación importante para evitar el error
+      if (json['DATA'] != null && json['DATA'] is List) {
+        final data = json['DATA'] as List;
+        return data.map<String>((e) => e['UNIDAD'].toString()).toList();
+      } else {
+        return []; // ⛔ Retorna lista vacía si DATA viene null o no es lista
+      }
+    }
+
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getUnidadesDisponiblesFull(
+      String empresa, String base, String folio) async {
+    final url = Uri.parse('$_baseUrl/unidadesLista/$empresa/$base/$folio');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+
+      if (json['DATA'] != null && json['DATA'] is List) {
+        return List<Map<String, dynamic>>.from(json['DATA']);
+      }
+    }
+
+    return [];
+  }
+
+  Future<bool> validarUnidadEnServidor(
+      String empresa, String base, String folio, String unidad) async {
+    final url =
+        Uri.parse("$_baseUrl/validaUnidad/$empresa/$base/$folio/$unidad");
+
+    _logger.i("🌐 URL: $url");
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final body = response.body.trim().toLowerCase().replaceAll('"', '');
+        final resultado = body == "true";
+
+        _logger.i(
+            "🔍 Resultado procesado: unidad=$unidad ➤ registrado=$resultado");
+        return resultado;
+      } else {
+        _logger.w("⚠️ Respuesta HTTP no exitosa: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      _logger.e("❌ Error al validar unidad '$unidad': $e");
       return false;
     }
-  } catch (e) {
-    _logger.e("❌ Error al validar unidad '$unidad': $e");
-    return false;
   }
-}
 
-Future<void> insertarMarcasDesdeServidor(List<dynamic> marcasData) async {
-  final db = await DatabaseHelper.instance.database;
+  Future<void> insertarMarcasDesdeServidor(List<dynamic> marcasData) async {
+    final db = await DatabaseHelper.instance.database;
 
-  for (var marca in marcasData) {
-    try {
-      await db.insert(
-        'marca',
-        {
-          'empresa': marca['EMPRESA'],
-          'marca': marca['MARCA'],
-          'procedencia': marca['PROCEDENCIA'],
-          'sincronizado': 1, // 👈 importante: viene del servidor
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } catch (e) {
-      print("❌ Error insertando marca: $e");
+    for (var marca in marcasData) {
+      try {
+        await db.insert(
+          'marca',
+          {
+            'empresa': marca['EMPRESA'],
+            'marca': marca['MARCA'],
+            'procedencia': marca['PROCEDENCIA'],
+            'sincronizado': 1, // 👈 importante: viene del servidor
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      } catch (e) {
+        debugPrint("❌ Error insertando marca: $e");
+      }
     }
   }
-}
-Future<void> insertarMedidasDesdeServidor(List<dynamic> medidasData) async {
-  final db = await DatabaseHelper.instance.database;
 
-  for (var medida in medidasData) {
-    try {
-      await db.insert(
-        'medida',
-        {
-          'empresa': medida['EMPRESA'],
-          'medida': medida['MEDIDA'],
-          'sincronizado': 1, // ✅ viene del servidor
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } catch (e) {
-      print("❌ Error insertando medida: $e");
+  Future<void> insertarMedidasDesdeServidor(List<dynamic> medidasData) async {
+    final db = await DatabaseHelper.instance.database;
+
+    for (var medida in medidasData) {
+      try {
+        await db.insert(
+          'medida',
+          {
+            'empresa': medida['EMPRESA'],
+            'medida': medida['MEDIDA'],
+            'sincronizado': 1, // ✅ viene del servidor
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      } catch (e) {
+        debugPrint("❌ Error insertando medida: $e");
+      }
     }
   }
-}
 
-
-
-
-
-Future<bool> actualizarCatalogosDesdeApi() async {
+  Future<bool> actualizarCatalogosDesdeApi() async {
     try {
       // final db = await _dbHelper.database;
 
@@ -785,7 +782,8 @@ Future<bool> actualizarCatalogosDesdeApi() async {
     return result.isNotEmpty;
   }
 
-  Future<int> syncDataConResultado(int empresaId, String baseId, String serie) async {
+  Future<int> syncDataConResultado(
+      int empresaId, String baseId, String serie) async {
     int totalCatalogosConDatos = 0;
 
     final medidas = await getMedidasLista(empresaId);
@@ -806,39 +804,47 @@ Future<bool> actualizarCatalogosDesdeApi() async {
     if (marcaRenovado.isNotEmpty) totalCatalogosConDatos++;
     if (bases.isNotEmpty) totalCatalogosConDatos++;
 
-    await _insertData(medidas.map((e) => Medida.fromMap(e)).toList(), _dbHelper.insertMedidas, "medidas");
-    await _insertData(marcas.map((e) => Marca.fromMap(e)).toList(), _dbHelper.insertMarcas, "marcas");
-    await _insertData(fallas.map((e) => Fallas.fromMap(e)).toList(), _dbHelper.insertFallas, "fallas");
-    await _insertData(modeloRen.map((e) => ModeloRenovado.fromMap(e)).toList(), _dbHelper.insertModeloRenovado, "modelo_renovado");
-    await _insertData(rangoCarga.map((e) => RangoCarga.fromMap(e)).toList(), _dbHelper.insertRangoCarga, "rango_carga");
-    await _insertData(tipoUnidad.map((e) => TipoUnidad.fromMap(e)).toList(), _dbHelper.insertTipoUnidad, "tipo_unidad");
-    await _insertData(marcaRenovado.map((e) => MarcaRenovado.fromMap(e)).toList(), _dbHelper.insertMarcaRenovado, "marca_renovado");
-    await _insertData(bases.map((e) => Base.fromMap(e)).toList(), _dbHelper.insertBase, "bases");
+    await _insertData(medidas.map((e) => Medida.fromMap(e)).toList(),
+        _dbHelper.insertMedidas, "medidas");
+    await _insertData(marcas.map((e) => Marca.fromMap(e)).toList(),
+        _dbHelper.insertMarcas, "marcas");
+    await _insertData(fallas.map((e) => Fallas.fromMap(e)).toList(),
+        _dbHelper.insertFallas, "fallas");
+    await _insertData(modeloRen.map((e) => ModeloRenovado.fromMap(e)).toList(),
+        _dbHelper.insertModeloRenovado, "modelo_renovado");
+    await _insertData(rangoCarga.map((e) => RangoCarga.fromMap(e)).toList(),
+        _dbHelper.insertRangoCarga, "rango_carga");
+    await _insertData(tipoUnidad.map((e) => TipoUnidad.fromMap(e)).toList(),
+        _dbHelper.insertTipoUnidad, "tipo_unidad");
+    await _insertData(
+        marcaRenovado.map((e) => MarcaRenovado.fromMap(e)).toList(),
+        _dbHelper.insertMarcaRenovado,
+        "marca_renovado");
+    await _insertData(bases.map((e) => Base.fromMap(e)).toList(),
+        _dbHelper.insertBase, "bases");
 
     return totalCatalogosConDatos;
   }
 
-Future<List<Map<String, dynamic>>> obtenerDesdetDelServidor(
-  String empresa, String base, String folio) async {
-  final url = Uri.parse(
-    'http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/DesDetxFolio/$empresa/$base/$folio',
-  );
+  Future<List<Map<String, dynamic>>> obtenerDesdetDelServidor(
+      String empresa, String base, String folio) async {
+    final url = Uri.parse(
+      'http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/DesDetxFolio/$empresa/$base/$folio',
+    );
 
-  try {
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['Data'] is List) {
-        return List<Map<String, dynamic>>.from(data['Data']);
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['Data'] is List) {
+          return List<Map<String, dynamic>>.from(data['Data']);
+        }
       }
+    } catch (e) {
+      debugPrint("❌ Error al obtener registros del servidor: $e");
     }
-  } catch (e) {
-    print("❌ Error al obtener registros del servidor: $e");
+    return [];
   }
-  return [];
-}
-
-
 
   /// 🔹 **Cierra sesión eliminando el token almacenado**
   Future<void> logout() async {

@@ -11,7 +11,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:miapp/db/db_crud.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:miapp/db/opciontablas.dart';
 import 'package:miapp/models/desdet.dart';
 // import 'package:miapp/models/desmstr.dart';
 import 'package:miapp/services/api_service.dart';
@@ -25,7 +24,6 @@ class PilaRegisterMtrScreen extends StatefulWidget {
   final bool nuevoFolio;
   final String? folioExistente;
   final DesDet? desdet; // 👈 Nuevo parámetro
-  
 
   const PilaRegisterMtrScreen({
     required this.folio,
@@ -177,134 +175,127 @@ class PilaRegisterMtrScreenState extends State<PilaRegisterMtrScreen>
     return true;
   }
 
-@override
-void initState() {
-  super.initState();
-  _folioController.text = widget.folio;
+  @override
+  void initState() {
+    super.initState();
+    _folioController.text = widget.folio;
 
-  if (!widget.nuevoFolio && widget.folioExistente != null) {
-    _folioController.text = widget.folioExistente!;
+    if (!widget.nuevoFolio && widget.folioExistente != null) {
+      _folioController.text = widget.folioExistente!;
+    }
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _cargarDatosIniciales().then((_) {
+      if (widget.desdet != null) {
+        final d = widget.desdet!;
+        setState(() {
+          _unidadController.text = d.procedencia ?? '';
+          _marcaController.text = d.marca ?? '';
+          _modeloController.text = d.modelo ?? '';
+          _medidaController.text = d.medida ?? '';
+          _pisoRemanenteController.text = d.pisoRemanente?.toString() ?? '';
+          _rangocargaController.text = d.rangoCarga ?? '';
+          _selectedOriginalRenovada = d.oriren?.toString();
+          _marcaRenovadoraController.text = d.marcaRen ?? '';
+          _modeloRenovadoraController.text = d.modeloRen ?? '';
+          _serieController.text = d.serie ?? '';
+          _dotController.text = d.dot ?? '';
+          _selectedSistemaMedida = d.sisMedida;
+
+          _fallas[0] = d.falla1;
+          _fallas[1] = d.falla2;
+          _fallas[2] = d.falla3;
+          _fallas[3] = d.falla4;
+          _fallas[4] = d.falla5;
+        });
+      }
+      _animationController.forward();
+    });
   }
 
-  _animationController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 800),
-  );
+  Future<void> _cargarDatosIniciales() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userData = prefs.getString("userData");
 
-  _cargarDatosIniciales().then((_) {
-    if (widget.desdet != null) {
-      final d = widget.desdet!;
-      setState(() {
-        _unidadController.text = d.procedencia ?? '';
-        _marcaController.text = d.marca ?? '';
-        _modeloController.text = d.modelo ?? '';
-        _medidaController.text = d.medida ?? '';
-        _pisoRemanenteController.text = d.pisoRemanente?.toString() ?? '';
-        _rangocargaController.text = d.rangoCarga ?? '';
-        _selectedOriginalRenovada = d.oriren?.toString();
-        _marcaRenovadoraController.text = d.marcaRen ?? '';
-        _modeloRenovadoraController.text = d.modeloRen ?? '';
-        _serieController.text = d.serie ?? '';
-        _dotController.text = d.dot ?? '';
-        _selectedSistemaMedida = d.sisMedida;
+    List<Map<String, dynamic>> marcasData =
+        await DBOperations.instance.queryAllRows('marca');
+    List<Map<String, dynamic>> medidaData =
+        await DBOperations.instance.queryAllRows('medida');
+    List<Map<String, dynamic>> rangoCargaData =
+        await DBOperations.instance.queryAllRows('rango_carga');
+    List<Map<String, dynamic>> marcaRenData =
+        await DBOperations.instance.queryAllRows('marca_renovado');
+    List<Map<String, dynamic>> modeloRenData =
+        await DBOperations.instance.queryAllRows('modelo_renovado');
+    List<Map<String, dynamic>> fallaData =
+        await DBOperations.instance.queryAllRows('fallas');
 
-        _fallas[0] = d.falla1;
-        _fallas[1] = d.falla2;
-        _fallas[2] = d.falla3;
-        _fallas[3] = d.falla4;
-        _fallas[4] = d.falla5;
-      });
+    String? folioGenerado;
+    String? serie;
+
+    if (userData != null) {
+      Map<String, dynamic> user = jsonDecode(userData);
+      usuario = user["USUARIO"] ?? "";
+      empresa = user["EMPRESA"] ?? "";
+      base = user["BASE"] ?? "";
+      operador = user["OPERADOR"] ?? "";
+
+      // ✅ Obtener serie y folio generado
+      serie = await AuthService().obtenerSerieDesdeSQLite(empresa, base);
+      folioGenerado = AuthService().obtenerFolio(serie);
+
+      // ✅ Asignar el folio solo si es nuevo (no estamos editando)
+      if (widget.desdet == null) {
+        _folioController.text = folioGenerado;
+      }
     }
-    _animationController.forward();
 
-    
-    
-  });
-  
-}
+    setState(() {
+      _opcionesMarca = marcasData
+          .map((data) => data['marca']?.toString() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList();
 
+      _opcionesMedida = medidaData
+          .map((data) => data['medida']?.toString() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList();
 
+      _opcionesRangoCarga = rangoCargaData
+          .map((data) => data['rc']?.toString() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toList();
 
-Future<void> _cargarDatosIniciales() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? userData = prefs.getString("userData");
+      _opcionesMarcaRenovadora = marcaRenData
+          .map((data) => data['marca']?.toString() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toList();
 
-  List<Map<String, dynamic>> marcasData =
-      await DBOperations.instance.queryAllRows('marca');
-  List<Map<String, dynamic>> medidaData =
-      await DBOperations.instance.queryAllRows('medida');
-  List<Map<String, dynamic>> rangoCargaData =
-      await DBOperations.instance.queryAllRows('rango_carga');
-  List<Map<String, dynamic>> marcaRenData =
-      await DBOperations.instance.queryAllRows('marca_renovado');
-  List<Map<String, dynamic>> modeloRenData =
-      await DBOperations.instance.queryAllRows('modelo_renovado');
-  List<Map<String, dynamic>> fallaData =
-      await DBOperations.instance.queryAllRows('fallas');
+      _opcionesModeloRenovadora = modeloRenData
+          .map((data) => data['modelo']?.toString() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toList();
 
-  String? folioGenerado;
-  String? serie;
+      _opcionesFallas = fallaData
+          .map((data) {
+            String falla = data['falla']?.toString() ?? 'Sin nombre';
+            String descripcion =
+                data['descripcion']?.toString() ?? 'Sin descripción';
+            return "$falla - $descripcion";
+          })
+          .where((item) => item.isNotEmpty)
+          .toList();
 
-  if (userData != null) {
-    Map<String, dynamic> user = jsonDecode(userData);
-    usuario = user["USUARIO"] ?? "";
-    empresa = user["EMPRESA"] ?? "";
-    base = user["BASE"] ?? "";
-    operador = user["OPERADOR"] ?? "";
-
-    // ✅ Obtener serie y folio generado
-    serie = await AuthService().obtenerSerieDesdeSQLite(empresa, base);
-    folioGenerado = await AuthService().obtenerFolio(serie);
-
-    // ✅ Asignar el folio solo si es nuevo (no estamos editando)
-    if (widget.desdet == null && folioGenerado != null) {
-      _folioController.text = folioGenerado;
-    }
+      // Refrescar campos por si ya tenían valores escritos
+      _marcaController.text = _marcaController.text.toUpperCase();
+      _medidaController.text = _medidaController.text.toUpperCase();
+      _rangocargaController.text = _rangocargaController.text.toUpperCase();
+    });
   }
-
-  setState(() {
-    _opcionesMarca = marcasData
-        .map((data) => data['marca']?.toString() ?? '')
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    _opcionesMedida = medidaData
-        .map((data) => data['medida']?.toString() ?? '')
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    _opcionesRangoCarga = rangoCargaData
-        .map((data) => data['rc']?.toString() ?? '')
-        .where((item) => item.isNotEmpty)
-        .toList();
-
-    _opcionesMarcaRenovadora = marcaRenData
-        .map((data) => data['marca']?.toString() ?? '')
-        .where((item) => item.isNotEmpty)
-        .toList();
-
-    _opcionesModeloRenovadora = modeloRenData
-        .map((data) => data['modelo']?.toString() ?? '')
-        .where((item) => item.isNotEmpty)
-        .toList();
-
-    _opcionesFallas = fallaData
-        .map((data) {
-          String falla = data['falla']?.toString() ?? 'Sin nombre';
-          String descripcion = data['descripcion']?.toString() ?? 'Sin descripción';
-          return "$falla - $descripcion";
-        })
-        .where((item) => item.isNotEmpty)
-        .toList();
-
-    // Refrescar campos por si ya tenían valores escritos
-    _marcaController.text = _marcaController.text.toUpperCase();
-    _medidaController.text = _medidaController.text.toUpperCase();
-    _rangocargaController.text = _rangocargaController.text.toUpperCase();
-  });
-}
-
-
 
   Future<void> _handleSaveOrUpdate() async {
     if (!_validarCamposObligatorios()) return;
@@ -322,17 +313,6 @@ Future<void> _cargarDatosIniciales() async {
 
     int regInt = widget.desdet?.reg ??
         await DBOperations.instance.getSiguienteRegParaFolio(folio);
-    String _valorOrNull(dynamic value) {
-      if (value == null || value.toString().trim().isEmpty) return "null";
-      return value.toString().trim();
-    }
-String _formatearDOT() {
-  if (_selectedSemanaDOT != null && _selectedAnioDOT != null) {
-    final dosDigitosAnio = _selectedAnioDOT!.substring(2, 4);
-    return "${_selectedSemanaDOT!}$dosDigitosAnio";
-  }
-  return "";
-}
 
     Map<String, dynamic> newRegistro = {
       "FOLIO": folio,
@@ -381,13 +361,13 @@ String _formatearDOT() {
       "FALLA5":
           _fallas[4]?.trim().isEmpty ?? true ? "null" : _fallas[4]!.trim(),
       // "ANIO": DateTime.now().year.toString(),
-     "ANIO": _selectedAnioDOT != null
-    ? _selectedAnioDOT!.substring(2, 4).padLeft(2, '0')
-    : "null",
+      "ANIO": _selectedAnioDOT != null
+          ? _selectedAnioDOT!.substring(2, 4).padLeft(2, '0')
+          : "null",
       "FSISTEMA":
           DateTime.now().toIso8601String(), // formato completo ISO con hora
       "VERSION": "C1806",
-      "EMPRESA": empresa.toString(), 
+      "EMPRESA": empresa.toString(),
       "BASE": base,
       "SIS_MEDIDA": sistemaMedida,
       "OPERADOR": operadorValor,
@@ -457,88 +437,12 @@ String _formatearDOT() {
           ),
         );
         Navigator.pop(context, folio);
-
       } else {
         _mostrarError(
             "❌ Error al ${isUpdate ? 'actualizar' : 'guardar'}: Código ${response.statusCode}");
       }
     } catch (e) {
       _mostrarError("❌ Error de conexión: $e");
-    }
-  }
-
-
-//-------------------------FUNCION DE GUARDAR---------------------------------------
-  Future<void> _guardarNuevoRegistro(
-      Map<String, dynamic> newRegistro, int regInt) async {
-    final response = await http.post(
-      Uri.parse(
-          "http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/PilaDesecho"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(newRegistro),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-
-      if (responseData["Data"] == "Registro NO actualizado!") {
-        _mostrarError("⚠️ No se pudo guardar el registro. Verifica los datos.");
-        return;
-      }
-
-      final registroSQLite = {...newRegistro, "SINCRONIZADO": 1};
-
-      final db = await DatabaseHelper.instance.database;
-      final existe = await DBOperations.instance.exists(
-        'desdet',
-        where: 'EMPRESA = ? AND BASE = ? AND FOLIO = ? AND REG = ?',
-        whereArgs: [int.tryParse(empresa), base, newRegistro["FOLIO"], regInt],
-      );
-
-      if (!existe) {
-        await db.insert('desdet', registroSQLite);
-      } else {
-        await DBOperations.instance.update(
-          'desdet',
-          {'SINCRONIZADO': 1},
-          'EMPRESA = ? AND BASE = ? AND FOLIO = ? AND REG = ?',
-          [int.tryParse(empresa), base, newRegistro["FOLIO"], regInt],
-        );
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Registro guardado correctamente.")),
-      );
-      Navigator.pop(context, newRegistro["FOLIO"]);
-    } else {
-      _mostrarError("❌ Error al guardar. Intenta de nuevo.");
-    }
-  }
-//-------------------------FUNCION DE EDITAR-----------------------------------------
-
-  Future<void> _actualizarRegistroExistente(
-      Map<String, dynamic> newRegistro) async {
-    final response = await http.put(
-      Uri.parse(
-          "http://atlastoluca.dyndns.org:20100/datasnap/rest/TServerMethods1/PilaDesecho"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"parametro1": newRegistro}),
-    );
-
-    if (response.statusCode == 201) {
-      await DBOperations.instance.update(
-        'desdet',
-        {...newRegistro, "SINCRONIZADO": 1},
-        'EMPRESA = ? AND BASE = ? AND FOLIO = ? AND REG = ?',
-        [int.tryParse(empresa), base, newRegistro["FOLIO"], newRegistro["REG"]],
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Registro actualizado correctamente.")),
-      );
-      Navigator.pop(context, newRegistro["FOLIO"]);
-    } else {
-      _mostrarError("❌ Error al actualizar. Código: ${response.statusCode}");
     }
   }
 
@@ -602,7 +506,7 @@ String _formatearDOT() {
                 (value) {}),
             _buildAnimatedField(
                 "Serie/Económico", _serieController, FontAwesomeIcons.tag),
-          
+
             _buildDOTSemanaAnioField(
                 "DOT", _dotController, FontAwesomeIcons.infoCircle),
             _buildSectionTitle("Fallas"),
@@ -648,63 +552,60 @@ String _formatearDOT() {
   }
 
 //-----------------------FUNCIONES DEL INPUTS DATOS ESTATICOS--------------------------------
-Widget _buildAnimatedField1(
-  String label,
-  TextEditingController controller,
-  IconData icon,
-) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: TextField(
-      controller: controller,
-      enabled: false, // No editable
-      onChanged: (value) {
-        final upper = value.toUpperCase();
-        if (value != upper) {
-          controller.value = controller.value.copyWith(
-            text: upper,
-            selection: TextSelection.collapsed(offset: upper.length),
-          );
-        }
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildAnimatedField1(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller,
+        enabled: false, // No editable
+        onChanged: (value) {
+          final upper = value.toUpperCase();
+          if (value != upper) {
+            controller.value = controller.value.copyWith(
+              text: upper,
+              selection: TextSelection.collapsed(offset: upper.length),
+            );
+          }
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-
-Widget _buildAnimatedField(
-  String label,
-  TextEditingController controller,
-  IconData icon,
-) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: TextField(
-      controller: controller,
-      onChanged: (value) {
-        final upper = value.toUpperCase();
-        if (value != upper) {
-          controller.value = controller.value.copyWith(
-            text: upper,
-            selection: TextSelection.collapsed(offset: upper.length),
-          );
-        }
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildAnimatedField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller,
+        onChanged: (value) {
+          final upper = value.toUpperCase();
+          if (value != upper) {
+            controller.value = controller.value.copyWith(
+              text: upper,
+              selection: TextSelection.collapsed(offset: upper.length),
+            );
+          }
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildAnimatedIntFieldd(
       String label, TextEditingController controller, IconData icon) {
@@ -725,58 +626,60 @@ Widget _buildAnimatedField(
 //----------------------- FIN DE FUNCIONES DEL INPUTS DATOS DE ESTATICOS-------------------------------
 //-----------------------FUNCIONES DEL INPUTS DATOS DE OTRAS TABLAS--------------------------------
 
-Widget _buildTypeAheadField(
-  String label,
-  List<String> items,
-  TextEditingController controller,
-  Function(String) onChanged,
-) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: TypeAheadFormField<String>(
-      textFieldConfiguration: TextFieldConfiguration(
+  Widget _buildTypeAheadField(
+    String label,
+    List<String> items,
+    TextEditingController controller,
+    Function(String) onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TypeAheadField<String>(
         controller: controller,
-        onChanged: (value) {
-          controller.value = controller.value.copyWith(
-            text: value.toUpperCase(),  // Mayúsculas mientras escribe
-            selection: TextSelection.collapsed(offset: value.length),
-          );
-        },
-        onEditingComplete: () {
-          String currentText = controller.text.trim().toUpperCase();
-          bool exists = items.any((item) => item.toUpperCase() == currentText);
+        builder: (context, fieldController, focusNode) => TextFormField(
+          controller: fieldController,
+          focusNode: focusNode,
+          onChanged: (value) {
+            controller.value = controller.value.copyWith(
+              text: value.toUpperCase(), // Mayúsculas mientras escribe
+              selection: TextSelection.collapsed(offset: value.length),
+            );
+          },
+          onEditingComplete: () {
+            String currentText = controller.text.trim().toUpperCase();
+            bool exists =
+                items.any((item) => item.toUpperCase() == currentText);
 
-          if (exists) {
-            controller.text = currentText;  // Lo deja en mayúsculas
-            onChanged(currentText);
-          } else {
-            controller.clear();             // Lo limpia si no coincide
-            onChanged('');
-          }
-        },
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+            if (exists) {
+              controller.text = currentText; // Lo deja en mayúsculas
+              onChanged(currentText);
+            } else {
+              controller.clear(); // Lo limpia si no coincide
+              onChanged('');
+            }
+          },
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+          ),
         ),
+        suggestionsCallback: (pattern) {
+          return items
+              .where(
+                  (item) => item.toLowerCase().contains(pattern.toLowerCase()))
+              .toList();
+        },
+        itemBuilder: (context, suggestion) {
+          return ListTile(title: Text(suggestion));
+        },
+        onSelected: (suggestion) {
+          controller.text = suggestion.toUpperCase(); // Guarda en mayúsculas
+          onChanged(suggestion.toUpperCase());
+        },
       ),
-      suggestionsCallback: (pattern) {
-        return items
-            .where((item) =>
-                item.toLowerCase().contains(pattern.toLowerCase()))
-            .toList();
-      },
-      itemBuilder: (context, suggestion) {
-        return ListTile(title: Text(suggestion));
-      },
-      onSuggestionSelected: (suggestion) {
-        controller.text = suggestion.toUpperCase(); // Guarda en mayúsculas
-        onChanged(suggestion.toUpperCase());
-      },
-    ),
-  );
-}
-
+    );
+  }
 
 //----------------------- FIN DE FUNCIONES DEL INPUTS DATOS DE OTRAS TABLAS-------------------------------
 
@@ -789,9 +692,11 @@ Widget _buildTypeAheadField(
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TypeAheadFormField<String>(
-        textFieldConfiguration: TextFieldConfiguration(
-          controller: controller,
+      child: TypeAheadField<String>(
+        controller: controller,
+        builder: (context, fieldController, focusNode) => TextFormField(
+          controller: fieldController,
+          focusNode: focusNode,
           decoration: InputDecoration(
             labelText: label,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -808,85 +713,87 @@ Widget _buildTypeAheadField(
           return ListTile(
               title: Text(suggestion)); // ✅ Se muestra la Falla + Descripción
         },
-        onSuggestionSelected: (suggestion) {
+        onSelected: (suggestion) {
           // ✅ Se extrae solo la "Falla" antes del guion "-"
           String fallaSeleccionada = suggestion.split(" - ").first;
           controller.text = fallaSeleccionada;
           onChanged(fallaSeleccionada); // ✅ Solo guarda la falla
         },
-        transitionBuilder: (context, suggestionsBox, controller) {
-          return suggestionsBox;
-        },
+        transitionBuilder: (context, animation, child) => child,
       ),
     );
   }
 
 // -------------------------fecha------------------------------------------------------
 
-Widget _buildDOTSemanaAnioField(
-  String label,
-  TextEditingController controller,
-  IconData icon,
-) {
-  final semanas = List.generate(52, (i) => (i + 1).toString().padLeft(2, '0')); // 01–52
-  final anios = List.generate(DateTime.now().year - 1999, (i) => (2000 + i).toString()); // 2000–actual
+  Widget _buildDOTSemanaAnioField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    final semanas =
+        List.generate(52, (i) => (i + 1).toString().padLeft(2, '0')); // 01–52
+    final anios = List.generate(DateTime.now().year - 1999,
+        (i) => (2000 + i).toString()); // 2000–actual
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedSemanaDOT,
-            items: semanas
-                .map((sem) => DropdownMenuItem(value: sem, child: Text("SEM $sem")))
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedSemanaDOT = value;
-                controller.text = _formatearDOT();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: "$label ",
-              prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedSemanaDOT,
+              items: semanas
+                  .map((sem) =>
+                      DropdownMenuItem(value: sem, child: Text("SEM $sem")))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedSemanaDOT = value;
+                  controller.text = _formatearDOT();
+                });
+              },
+              decoration: InputDecoration(
+                labelText: "$label ",
+                prefixIcon: Icon(icon, color: Colors.blueGrey[700]),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedAnioDOT,
-            items: anios
-                .map((anio) => DropdownMenuItem(value: anio, child: Text("AÑO $anio")))
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedAnioDOT = value;
-                controller.text = _formatearDOT();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: "$label ",
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedAnioDOT,
+              items: anios
+                  .map((anio) =>
+                      DropdownMenuItem(value: anio, child: Text("AÑO $anio")))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedAnioDOT = value;
+                  controller.text = _formatearDOT();
+                });
+              },
+              decoration: InputDecoration(
+                labelText: "$label ",
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-String _formatearDOT() {
-  if (_selectedSemanaDOT != null && _selectedAnioDOT != null) {
-    final dosDigitosAnio = _selectedAnioDOT!.substring(2, 4);
-    return "${_selectedSemanaDOT!}$dosDigitosAnio";
+        ],
+      ),
+    );
   }
-  return "";
-}
 
-
+  String _formatearDOT() {
+    if (_selectedSemanaDOT != null && _selectedAnioDOT != null) {
+      final dosDigitosAnio = _selectedAnioDOT!.substring(2, 4);
+      return "${_selectedSemanaDOT!}$dosDigitosAnio";
+    }
+    return "";
+  }
 
 ////  -----------------------------------------------------------------
   Widget _buildSectionTitle(String title) {

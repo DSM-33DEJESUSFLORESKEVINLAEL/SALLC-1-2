@@ -44,99 +44,102 @@ class MarcaListScreenState extends State<MarcaListScreen> {
     _loadMarcas();
   }
 
-  void updateMarca(int empresa, String nuevaMarca, String nuevaProcedencia) async {
-  await DBOperations.instance.updateByWhere(
-    'marca',
-    {
-      'marca': nuevaMarca,
-      'procedencia': nuevaProcedencia,
-      'sincronizado': 0, // 👈 Lo marcamos como no sincronizado otra vez
-    },
-    where: 'empresa = ? AND marca = ?',
-    whereArgs: [empresa, nuevaMarca],
-  );
-  _loadMarcas(); // 🔄 Recarga la lista después de actualizar
-}
-
-
- Future<void> _sincronizarMarcas() async {
-  final authService = AuthService();
-  final tieneInternet = await authService.hasInternetConnection();
-
-  if (!tieneInternet) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("📴 Sin conexión. No se puede sincronizar.")),
+  void updateMarca(
+      int empresa, String nuevaMarca, String nuevaProcedencia) async {
+    await DBOperations.instance.updateByWhere(
+      'marca',
+      {
+        'marca': nuevaMarca,
+        'procedencia': nuevaProcedencia,
+        'sincronizado': 0, // 👈 Lo marcamos como no sincronizado otra vez
+      },
+      where: 'empresa = ? AND marca = ?',
+      whereArgs: [empresa, nuevaMarca],
     );
-    return;
+    _loadMarcas(); // 🔄 Recarga la lista después de actualizar
   }
 
-  // Mostrar el mensaje de sincronización
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const AlertDialog(
-      title: Text("Sincronizando..."),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text("Por favor espera mientras se sincronizan las marcas"),
-        ],
-      ),
-    ),
-  );
+  Future<void> _sincronizarMarcas() async {
+    final authService = AuthService();
+    final tieneInternet = await authService.hasInternetConnection();
 
-  final List<Map<String, dynamic>> marcasData =
-      await DBOperations.instance.queryAllRows('marca');
-  int enviados = 0;
+    if (!mounted) return;
 
-  for (var data in marcasData) {
-    final marca = Marca.fromMap(data);
-
-    if (marca.sincronizado == 1) continue;
-
-    final marcaStr = marca.marca;
-    final empresaStr = marca.empresa.toString();
-    final procedenciaStr =
-        (marca.procedencia != null && marca.procedencia!.isNotEmpty)
-            ? "'${marca.procedencia}'"
-            : "'null'";
-
-    final sql =
-        "insert into marcas(MARCA,PROCEDENCIA,EMPRESA) values ('$marcaStr',$procedenciaStr,'$empresaStr')";
-
-    final insertado = await authService.ejecutarSQLRemoto(sql);
-    
-
-    if (insertado) {
-      enviados++;
-      await DBOperations.instance.updateByWhere(
-        'marca',
-        {'sincronizado': 1},
-        where: 'empresa = ? AND marca = ?',
-        whereArgs: [marca.empresa, marca.marca],
+    if (!tieneInternet) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("📴 Sin conexión. No se puede sincronizar.")),
       );
+      return;
     }
+
+    // Mostrar el mensaje de sincronización
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        title: Text("Sincronizando..."),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Por favor espera mientras se sincronizan las marcas"),
+          ],
+        ),
+      ),
+    );
+
+    final List<Map<String, dynamic>> marcasData =
+        await DBOperations.instance.queryAllRows('marca');
+    int enviados = 0;
+
+    for (var data in marcasData) {
+      final marca = Marca.fromMap(data);
+
+      if (marca.sincronizado == 1) continue;
+
+      final marcaStr = marca.marca;
+      final empresaStr = marca.empresa.toString();
+      final procedenciaStr =
+          (marca.procedencia != null && marca.procedencia!.isNotEmpty)
+              ? "'${marca.procedencia}'"
+              : "'null'";
+
+      final sql =
+          "insert into marcas(MARCA,PROCEDENCIA,EMPRESA) values ('$marcaStr',$procedenciaStr,'$empresaStr')";
+
+      final insertado = await authService.ejecutarSQLRemoto(sql);
+
+      if (insertado) {
+        enviados++;
+        await DBOperations.instance.updateByWhere(
+          'marca',
+          {'sincronizado': 1},
+          where: 'empresa = ? AND marca = ?',
+          whereArgs: [marca.empresa, marca.marca],
+        );
+      }
+    }
+
+    // Cerrar el mensaje de sincronización
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("✔ Sincronización completada: $enviados marcas enviadas"),
+      ),
+    );
+
+    _loadMarcas();
   }
-
-  // Cerrar el mensaje de sincronización
-  Navigator.pop(context);
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text("✔ Sincronización completada: $enviados marcas enviadas"),
-    ),
-  );
-
-  _loadMarcas();
-}
 
   void _navigateToRegisterScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const MarcaRegisterScreen()),
-    ).then((_) => _loadMarcas()); // 🔄 
+    ).then((_) => _loadMarcas()); // 🔄
   }
 
   void _onItemTapped(int index) {
@@ -175,7 +178,6 @@ class MarcaListScreenState extends State<MarcaListScreen> {
                   ],
                 ),
               )
-              
             : _marcas.isEmpty
                 ? const Center(child: Text("No hay marcas registradas"))
                 : SingleChildScrollView(
@@ -197,9 +199,8 @@ class MarcaListScreenState extends State<MarcaListScreen> {
                           rows: _marcas.map((marca) {
                             final bool esSincronizada = marca.sincronizado == 1;
 
-                            
                             return DataRow(
-                              color: MaterialStateProperty.resolveWith<Color?>(
+                              color: WidgetStateProperty.resolveWith<Color?>(
                                 (states) =>
                                     esSincronizada ? Colors.blue[0] : null,
                               ),
