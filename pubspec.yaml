@@ -6,6 +6,7 @@ publish_to: 'none' # Evita publicar el paquete en pub.dev
 version: 1.0.2+1
 
 
+
 environment:
   sdk: '>=3.2.0 <4.0.0'  # Ajustado a una versión estable
 
